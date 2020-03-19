@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import zlib
 import UpdatePrinter
-from functools import reduce
 
 __author__ = "Michael Krisper"
 __copyright__ = "Copyright 2012, Michael Krisper"
@@ -61,10 +60,10 @@ def print_duplicates(files, displaycount=None):
     sortedfiles = sorted(files, key=lambda x: (len(x), os.path.getsize(x[0])), reverse=True)
     for pos, paths in enumerate(sortedfiles[:displaycount], start=1):
         prefix = os.path.dirname(os.path.commonprefix(paths))
-        print("\n(%d) Found %d duplicate files (size: %d Bytes) in %s/:" % \
-            (pos, len(paths), os.path.getsize(paths[0]), prefix))
+        print "\n(%d) Found %d duplicate files (size: %d Bytes) in %s/:" % \
+            (pos, len(paths), os.path.getsize(paths[0]), prefix)
         for i, path in enumerate(sorted(paths), start=1):
-            print("%2d: %s" % (i, path[len(prefix) + 1:]))
+            print "%2d: %s" % (i, path[len(prefix) + 1:])
 
 def get_hash_key(filename):
     """Calculates the hash value for a file."""
@@ -105,11 +104,11 @@ def filter_duplicate_files(files, top=None):
             update("\r(%s) %d Files checked, %d duplicates found (%d files)" % (name, i, duplicate_count, count))
         else:
             update("\r(%s) %d Files checked, %d duplicates found (%d files)" % (name, i, duplicate_count, count), force=True)
-        print("")
-        sortedfiles = sorted(iter(duplicates.values()), key=len, reverse=True)
+        print ""
+        sortedfiles = sorted(duplicates.itervalues(), key=len, reverse=True)
         files = [filepath for filepaths in sortedfiles[:topcount] if len(filepaths) > 1 for filepath in filepaths]    
 
-    return [filelist for filelist in duplicates.values() if len(filelist) > 1]
+    return [filelist for filelist in duplicates.itervalues() if len(filelist) > 1]
 
 def get_files(directory, include_hidden, include_empty):
     """Returns all FILES in the directory which apply to the filter rules."""
@@ -128,8 +127,8 @@ if __name__ == "__main__":
     print_duplicates(DUPLICATES, ARGS.top)
     
     if ARGS.fast:
-        print("\nFound %d duplicates at least (%d duplicate files total) -- More duplicates may exist." % \
-            (len(DUPLICATES), reduce(lambda sumValue, files: sumValue + len(files), DUPLICATES, 0)))
+        print "\nFound %d duplicates at least (%d duplicate files total) -- More duplicates may exist." % \
+            (len(DUPLICATES), reduce(lambda sumValue, files: sumValue + len(files), DUPLICATES, 0))
     else:
-        print("\nFound %d duplicates (%d duplicate files total)" % \
-            (len(DUPLICATES), reduce(lambda sumValue, files: sumValue + len(files), DUPLICATES, 0)))
+        print "\nFound %d duplicates (%d duplicate files total)" % \
+            (len(DUPLICATES), reduce(lambda sumValue, files: sumValue + len(files), DUPLICATES, 0))
