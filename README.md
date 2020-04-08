@@ -38,7 +38,7 @@ duplicates --work need_cleanup --golden never_change_me --purge
 ```
 
 Usage
-```sh
+```text
 usage: duplicates [-h] [-v] [-g GOLDEN] -w WORK [-p]
 
 Finds duplicates in both `work` and `golden` folders. 
