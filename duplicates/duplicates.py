@@ -6,6 +6,7 @@ Created on Feb 3, 2018
 """
 
 import argparse
+import humanize
 import logging
 import os
 import sys
@@ -13,8 +14,6 @@ from datetime import datetime
 from itertools import chain
 from time import ctime
 from traceback import print_exc
-
-import humanize
 
 from duplicates.duplicatefilefinder import get_files, filter_duplicate_files
 
@@ -49,8 +48,9 @@ class Stats(object):
 def parse_arguments():
     """ Parses the arguments """
     description = ("Finds duplicates in both `work` and `golden` folders. \n"
-                   "Duplicates that are in `work` folder are purged. \n"
-                   "Trying to keep an oldest file.")
+                   "If --purge flag set,\n"
+                   "Only the duplicates that are in `work` folder are removed.\n" 
+                   "Keeps an oldest file.")
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=description)
     parser.add_argument('-v', '--verbose', help='display debug info', action='store_true')
     parser.add_argument('-g', '--golden',
@@ -90,14 +90,14 @@ def get_all_files(path, ignore=None):
 def print_and_process_duplicates(files, golden, purge=False):
     """ Prints a list of duplicates.
     Pretty much the same as duplicate file finder however modified not to sort duplicated files"""
-    # sort high level; by their size and then by number of duplicated files
+    # Sort high level; by their size and then by number of duplicated files
     sorted_files = sorted(files, key=lambda x: (os.path.getsize(x[0]), len(x)), reverse=True)
-    # now sort duplicate lists for each duplicate according 1. if it is in golden and modification date
+    # Now sort duplicate lists for each duplicate according 1. if it is in golden and modification date
     sorted_files = [
         sorted(paths, key=lambda x: (not (x + os.sep).startswith(golden + os.sep), os.path.getmtime(x)), reverse=False)
         for paths in sorted_files]
 
-    # statistics
+    # Statistics
     stats = Stats()
 
     for pos, paths in enumerate(sorted_files, start=1):
@@ -111,9 +111,9 @@ def print_and_process_duplicates(files, golden, purge=False):
             size_ = e
         print("\n(%d) Found %d duplicate files (size: %s) in '%s/':" % (pos, len(paths), size_, prefix))
 
-        # fill the tags
-        tags = ["NA"] * len(paths)  # mark with NA
-        tags[0] = " K"  # keep the first one in our sorted list
+        # Fill the tags
+        tags = ["NA"] * len(paths)  # Mark with NA
+        tags[0] = " K"  # Keep the first one in our sorted list
         for i, t in enumerate(paths[1:], start=1):
             tags[i] = " S" if (t + os.sep).startswith(golden + os.sep) else "*D"
 
@@ -121,7 +121,7 @@ def print_and_process_duplicates(files, golden, purge=False):
         stats.skipped_files += tags.count(" S")
         stats.to_delete_files += tags.count("*D")
 
-        # redundant checks - just to be super cautious
+        # Redundant checks - just to be super cautious
         if len(tags) != len(paths):
             raise Exception("something wrong - should never trigger - tags mismatch")
         if tags.count("*D") >= len(tags):
@@ -157,33 +157,33 @@ def duplicates(work, golden=None, purge=False):
     @return: statistics object
     """
 
-    # 1. optimization checks
+    # 1. Optimization checks
     if golden:
         golden = os.path.abspath(golden)
         print("files unchanged (golden) in:", golden)
     else:
-        golden = "\x00"  # if golden is not set, make it non path string
+        golden = "\x00"  # If golden is not set, make it non path string
     work = os.path.abspath(work)
     print("searching and removing duplicates in:", work)
 
     if (work + os.sep).startswith(golden + os.sep):
         raise ArgumentCheck("work path is under golden")
 
-    # 2. find duplicates
+    # 2. Find duplicates
     all_files = get_files(directory=work, include_hidden=True, include_empty=True)
     if golden != "\x00":  # add golden generator
         all_files = chain(all_files, get_files(directory=golden, include_hidden=True,
                                                include_empty=True))
     duplicate_lists = filter_duplicate_files(all_files, None)
 
-    # 3. print the results and purge duplicates if needed
+    # 3. Print the results and purge duplicates if needed
     stats = print_and_process_duplicates(duplicate_lists, golden, purge)
 
     # 4. Another redundant check
     if sum([len(x) for x in duplicate_lists]) != stats.keep_files + stats.skipped_files + stats.to_delete_files:
         raise Exception("Hmm should never get here, data verification failed")
 
-    # 5. remove empty dirs in work
+    # 5. Remove empty dirs in work
     if purge:
         print("Deleting empty dir's in work ('%s')" % work)
         delete_empty_dirs(work)
@@ -198,13 +198,13 @@ def main():
         # *** Execution time ***
         started = datetime.now()
 
-        # 0. get arguments
+        # 0. Get arguments
         args = parse_arguments()
 
-        # 1. prepare
+        # 1. Prepare
         logger.setLevel(logging.DEBUG if args.verbose else logging.INFO)
 
-        # 2. duplicates
+        # 2. Duplicates
         stats = duplicates(args.work, args.golden, args.purge)
         print(stats)
 
@@ -227,14 +227,14 @@ def main():
 def delete_empty_dirs(path):
     """ Recursively remove empty directories """
     for root, dirs, files in os.walk(str(path)):
-        # remover osX hidden files
+        # Remover osX hidden files
         if len(files) == 1:
             try:
                 os.unlink(os.path.join(root, ".DS_Store"))
             except OSError:
                 pass
 
-        # recursion
+        # Recursion
         for dir_ in dirs:
             delete_empty_dirs(os.path.join(root, dir_))
             try:
@@ -242,8 +242,6 @@ def delete_empty_dirs(path):
                 print("   empty directory removed: ", os.path.join(root, dir_).encode('utf-8'))
             except OSError:
                 pass
-
-    # print root
 
 
 if __name__ == '__main__':
